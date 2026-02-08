@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { authClient } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 
 export const SignInForm = () => {
@@ -52,22 +51,33 @@ export const SignInForm = () => {
 
     setLoading(true);
     try {
-      const result = await authClient.signIn.email({
-        email: formData.email,
-        password: formData.password,
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/auth/signin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
       });
 
-      if (result.error) {
-        setErrors({ general: result.error.message || "Sign in failed. Please try again." 
-          
-        });
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        setErrors({ general: data.detail || data.message || "Sign in failed. Please try again." });
       } else {
+        // Store token
+        if (data.data?.token) {
+          localStorage.setItem('token', data.data.token);
+          document.cookie = `token=${data.data.token}; path=/; max-age=604800`; // 7 days
+        }
         // Redirect to dashboard after successful signin
         router.push('/dashboard/tasks');
       }
     } catch (error) {
       console.error('Signin error:', error);
-      setErrors({ general: 'An unexpected error occurred' });
+      setErrors({ general: 'An unexpected error occurred. Is the backend running?' });
     } finally {
       setLoading(false);
     }

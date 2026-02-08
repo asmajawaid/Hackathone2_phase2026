@@ -1,0 +1,92 @@
+# Dependencies
+node_modules/
+jspm_packages/
+
+# Testing
+coverage/
+.nyc_output/
+
+# User-specific files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env*.local
+.env*.dev
+.env*.test
+.env*.production
+
+# Next.js
+.next/
+.out/
+build/
+dist/
+.nuxt/
+.vuepress/dist
+.cache-loader
+
+# Production
+out/
+
+# Logs
+logs/
+*.log
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+lib-cov/
+
+# Debug log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor directories and files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+*.un~
+.DS_Store
+.atom/
+
+# Temporary files
+*.tmp
+*.bak
+*.orig
+*.patch
+~$*
+
+# OS generated files
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Icon?
+ehthumbs.db
+Thumbs.db
+
+# Build outputs
+*.min.js
+*.min.css
+.bundle.js
+.bundle.css
+public/dist/
+static/js/*.js
+static/css/*.css
+
+# Cypress
+cypress/videos/
+cypress/screenshots/
+
+# Next.js cache
+.cache/

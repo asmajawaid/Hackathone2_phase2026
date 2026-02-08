@@ -1,0 +1,1633 @@
+# Evolution of Todo - Phase 2 Implementation Plan
+
+## SECTION 1: Executive Summary
+
+### Project Overview
+- **Project:** Evolution of Todo - Phase 2 Full-Stack Web Application
+- **Plan Version:** 1.0.0
+- **Date:** January 28, 2026
+- **Development Methodology:** Spec-Driven Development (SDD)
+- **Development Tool:** Claude Code with Spec-Kit Plus
+
+### Primary Objectives
+- Deliver working web application with authentication
+- Implement 5 basic todo features (Add, View, Update, Delete, Mark Complete)
+- Create beautiful, responsive UI with glass morphism design
+- Demonstrate SDD methodology mastery
+
+### Success Criteria
+- All 5 basic features functional and tested
+- Authentication system working (signup/signin)
+- User data properly isolated by user_id
+- Design system fully implemented (latte colors, glass effects, gradients)
+- Backend tests achieve 80%+ coverage
+- Frontend deployed on Vercel
+- Backend deployed and accessible
+- Demo video created (< 90 seconds)
+
+### Estimated Timeline
+- **Total Duration:** 3 weeks
+- **Week 1:** Backend development (setup, API, testing)
+- **Week 2:** Frontend development (setup, auth, task UI)
+- **Week 3:** Integration, polish, deployment
+
+### Team Size
+- Individual developer following SDD methodology
+
+### Risk Assessment Summary
+- **High Risk:** JWT authentication integration between Better Auth and FastAPI
+- **Medium Risk:** Glass morphism performance on lower-end devices
+- **Low Risk:** Database connection issues with Neon PostgreSQL
+
+---
+
+## SECTION 2: Architecture Plan
+
+### 2.1 System Architecture Overview
+
+#### Frontend Architecture
+**Technology Stack:**
+- Next.js 16+ with App Router (server components by default)
+- TypeScript 5.x for type safety
+- Tailwind CSS with custom latte color palette
+- Better Auth for authentication
+- Fetch API for backend communication
+
+**Component Strategy:**
+- **Server Components:** Default for all pages (data fetching, initial rendering)
+- **Client Components:** Only for interactivity (forms, buttons, modals, state management)
+- **Folder Structure:** App Router convention with route groups for auth/dashboard protection
+
+**State Management:**
+- Server state: React Server Components for initial data
+- Client state: React hooks (useState, useReducer) for UI interactions
+- Form state: Controlled components with validation
+- **No global state library needed** for Phase 2
+
+**Route Organization:**
+```
+app/
+├── (auth)/
+│   ├── layout.tsx          # Auth layout (public routes)
+│   ├── signin/
+│   │   └── page.tsx        # Sign in page
+│   └── signup/
+│       └── page.tsx        # Sign up page
+├── (dashboard)/
+│   ├── layout.tsx          # Protected dashboard layout
+│   └── tasks/
+│       └── page.tsx        # Task management page
+├── layout.tsx              # Root layout
+├── page.tsx                # Landing page
+└── globals.css             # Global styles
+```
+
+**API Client Architecture:**
+- Centralized API client with JWT token injection
+- Error handling and retry logic
+- Loading and error states management
+- TypeScript interfaces for all API responses
+
+#### Backend Architecture
+**Technology Stack:**
+- FastAPI framework with async/await patterns
+- SQLModel ORM (combining SQLAlchemy + Pydantic)
+- Pydantic for request/response validation
+- python-jose for JWT handling
+- psycopg2 for PostgreSQL driver
+
+**Application Structure:**
+- **Main:** FastAPI app with middleware configuration
+- **Models:** SQLModel definitions for database entities
+- **Routes:** API endpoints organized by resource
+- **Middleware:** CORS, authentication, logging, error handling
+- **Database:** Session management and connection pooling
+
+**API Structure:**
+- Base path: `/api`
+- User-scoped endpoints: `/api/{user_id}/tasks`
+- All endpoints require JWT authentication
+- RESTful conventions followed
+- Consistent response format
+
+**Middleware Stack:**
+- CORS middleware (allow frontend origin)
+- JWT verification middleware (authenticate requests)
+- Request logging middleware (debugging/monitoring)
+- Error handling middleware (consistent error responses)
+
+#### Database Architecture
+**Technology:**
+- PostgreSQL 15+ hosted on Neon Serverless
+- SQLModel ORM for database interactions
+- Connection pooling for performance
+- Indexes for query optimization
+
+**Connection Strategy:**
+- Environment variable for database URL
+- Connection pooling with 5-10 connections
+- Session management with context managers
+- Auto-create tables on startup (Phase 2 simplicity)
+
+**Model Strategy:**
+- **User Model:** Managed by Better Auth (email, name, password hash)
+- **Task Model:** Custom model with user relationship
+- **Relationships:** Foreign key from tasks to users (CASCADE delete)
+- **Indexes:** On user_id and completed status for performance
+
+#### Authentication Architecture
+**Challenge:** Better Auth runs on Next.js (JavaScript), Backend is FastAPI (Python)
+
+**Solution:** JWT Token Bridge
+
+**Flow:**
+1. User authenticates via Better Auth → JWT issued
+2. JWT stored as httpOnly cookie (preferred) or in browser storage
+3. Every API request includes JWT in Authorization header
+4. Backend verifies JWT signature with shared secret
+5. Backend extracts user_id from JWT payload
+6. Backend validates user_id matches URL parameter
+7. Backend filters all queries by authenticated user_id
+
+**Security Requirements:**
+- Shared secret stored in environment variables (identical in frontend/backend)
+- JWT expiry: 7 days (configurable)
+- HTTPS enforced in production
+- User data strictly isolated by user_id
+- Input validation on all endpoints
+
+### 2.2 Component Hierarchy
+
+#### Frontend Component Tree
+```
+Root Layout
+├── (auth) Group
+│   ├── Auth Layout
+│   │   ├── Header with Logo
+│   │   └── Main Content Area
+│   ├── SignIn Page
+│   │   ├── GlassCard Container
+│   │   ├── Form with Input Fields
+│   │   ├── Submit Button
+│   │   └── Link to SignUp
+│   └── SignUp Page
+│       ├── GlassCard Container
+│       ├── Form with Input Fields
+│       ├── Submit Button
+│       └── Link to SignIn
+└── (dashboard) Group
+    ├── Dashboard Layout (Protected)
+    │   ├── Header with User Menu
+    │   ├── Navigation Sidebar
+    │   └── Main Content Area
+    └── Tasks Page
+        ├── Add Task Button
+        ├── Task List Grid
+        │   └── Task Card (repeated)
+        └── Empty State Message
+```
+
+#### UI Components
+```
+UI Components
+├── GlassCard
+│   ├── Glass background effect
+│   ├── Blur backdrop filter
+│   ├── Border with subtle transparency
+│   └── Shadow for depth
+├── Button (4 variants)
+│   ├── Primary (gradient lavender)
+│   ├── Secondary (solid surface)
+│   ├── Ghost (text only)
+│   └── Danger (red gradient)
+├── Input
+│   ├── Glass effect background
+│   ├── Proper padding and spacing
+│   ├── Validation states
+│   └── Focus rings
+├── Modal
+│   ├── Overlay background
+│   ├── Glass card container
+│   ├── Header with close button
+│   └── Content area
+└── Loading/Spinner
+    ├── Animated spinner
+    ├── Glass backdrop
+    └── Text indicator
+```
+
+#### Feature Components
+```
+Feature Components
+├── TaskCard
+│   ├── Checkbox for completion
+│   ├── Task title and description
+│   ├── Created date
+│   ├── Action buttons (Edit, Delete)
+│   └── Completion styling
+├── TaskList
+│   ├── Grid layout container
+│   ├── Individual TaskCards
+│   ├── Loading skeleton
+│   └── Empty state
+├── TaskForm
+│   ├── Title input
+│   ├── Description textarea
+│   ├── Validation
+│   ├── Submit button
+│   └── Cancel button
+└── DeleteConfirmation
+    ├── Modal with warning
+    ├── Confirm button
+    └── Cancel button
+```
+
+#### Backend Route Structure
+```
+main.py (FastAPI app)
+├── Middleware
+│   ├── CORS (Cross-Origin Resource Sharing)
+│   ├── Auth (JWT verification)
+│   └── Error handling (Global exception handler)
+└── Routes
+    └── /api/{user_id}/tasks
+        ├── GET / (list all tasks)
+        ├── POST / (create new task)
+        ├── GET /{id} (get single task)
+        ├── PUT /{id} (update task)
+        ├── DELETE /{id} (delete task)
+        └── PATCH /{id}/complete (toggle completion)
+```
+
+### 2.3 Data Flow Architecture
+
+#### Authentication Flow
+```
+User Action (Signup/Signin)
+    ↓
+Better Auth (Frontend JavaScript)
+    ↓
+JWT Token Generated with user_id payload
+    ↓
+Token Stored (httpOnly Cookie preferred)
+    ↓
+Subsequent API Requests Include Authorization Header
+    ↓
+Backend JWT Verification Middleware
+    ↓
+Token Signature Validated with Shared Secret
+    ↓
+User ID Extracted from JWT Payload
+    ↓
+User ID Verified Matches URL Parameter
+    ↓
+Route Handler Executes with User Context
+    ↓
+Database Queries Filtered by user_id
+```
+
+#### CRUD Operations Flow
+```
+User Action (Frontend Component)
+    ↓
+Optimistic UI Update (Immediate visual feedback)
+    ↓
+API Call with JWT Authorization
+    ↓
+Backend Authentication Middleware
+    ↓
+Backend Request Validation (Pydantic)
+    ↓
+Database Operation (SQLModel ORM)
+    ↓
+Response Generation
+    ↓
+Response Sent to Frontend
+    ↓
+UI Updated (or Reverted if Error)
+```
+
+### 2.4 Security Architecture
+
+#### JWT Implementation
+- **Algorithm:** HS256 (HMAC SHA-256)
+- **Payload:** user_id, email, exp (expiry)
+- **Secret:** Environment variable (same in frontend/backend)
+- **Expiry:** 7 days (configurable)
+
+#### Input Validation
+- **Frontend:** Client-side validation with immediate feedback
+- **Backend:** Pydantic models for request/response validation
+- **Database:** SQLModel field constraints and types
+
+#### Data Isolation
+- **User ID Filtering:** All queries filtered by authenticated user_id
+- **Foreign Key Constraints:** Database-level enforcement
+- **URL Parameter Verification:** Backend validates user_id matches token
+
+#### Additional Security Measures
+- **CORS Configuration:** Allow only frontend origin
+- **SQL Injection Prevention:** ORM handles parameterization
+- **XSS Prevention:** React framework handles escaping
+- **CSRF Protection:** httpOnly cookies prevent JS access
+
+---
+
+## SECTION 3: Implementation Strategy
+
+### 3.1 Development Phases
+
+#### Phase A: Foundation Setup (Backend First)
+**Duration:** 2 days
+**Focus:** Backend infrastructure and database setup
+
+**Tasks:**
+- Initialize backend project with uv
+- Setup FastAPI application structure
+- Configure environment variables
+- Setup Neon database connection
+- Create SQLModel models (User, Task)
+- Implement database initialization and session management
+- Test database connection
+
+**Deliverables:**
+- Working FastAPI application
+- Database connection established
+- Models defined and tested
+- Environment variables configured
+
+#### Phase B: Backend API Development
+**Duration:** 3 days
+**Focus:** API endpoints and authentication middleware
+
+**Tasks:**
+- Create JWT verification middleware
+- Implement authentication dependency
+- Create task CRUD endpoints (GET, POST, PUT, DELETE, PATCH)
+- Add request/response validation with Pydantic
+- Implement error handling middleware
+- Setup CORS configuration
+- Test all endpoints manually
+
+**Deliverables:**
+- All task endpoints implemented
+- JWT authentication working
+- Request validation in place
+- Error responses standardized
+
+#### Phase C: Backend Testing
+**Duration:** 2 days
+**Focus:** Test coverage and quality assurance
+
+**Tasks:**
+- Setup pytest configuration
+- Write model validation tests
+- Write endpoint integration tests
+- Write authentication flow tests
+- Achieve 80%+ test coverage
+- Document API endpoints with examples
+
+**Deliverables:**
+- Test suite with 80%+ coverage
+- All tests passing
+- API documentation completed
+
+#### Phase D: Frontend Foundation
+**Duration:** 2 days
+**Focus:** Next.js setup and design system foundation
+
+**Tasks:**
+- Initialize Next.js 16 project with TypeScript
+- Configure Tailwind CSS with latte color palette
+- Create design system utilities (glass effects, gradients)
+- Setup folder structure (auth, dashboard route groups)
+- Configure environment variables
+- Test basic page rendering
+
+**Deliverables:**
+- Working Next.js application
+- Tailwind configured with design system
+- Folder structure established
+- Basic pages rendering
+
+#### Phase E: Design System Implementation
+**Duration:** 2 days
+**Focus:** UI components with glass morphism effects
+
+**Tasks:**
+- Create base UI components (GlassCard, Button, Input, Modal)
+- Implement glass morphism effects with backdrop filters
+- Add gradient utilities and animations
+- Create animation keyframes (fade, slide, scale)
+- Test responsive behavior on different devices
+- Document component usage patterns
+
+**Deliverables:**
+- Complete design system components
+- Glass effects implemented
+- Responsive design verified
+- Component documentation
+
+#### Phase F: Authentication UI
+**Duration:** 2 days
+**Focus:** User authentication flows
+
+**Tasks:**
+- Configure Better Auth integration
+- Create signup page with glass design
+- Create signin page with glass design
+- Implement form validation and error handling
+- Test JWT token flow between frontend/backend
+- Create protected route middleware for dashboard
+
+**Deliverables:**
+- Working authentication UI
+- Secure token management
+- Protected routes implemented
+- Auth flows tested
+
+#### Phase G: Task Management UI
+**Duration:** 3 days
+**Focus:** Core task management functionality
+
+**Tasks:**
+- Create API client with JWT injection
+- Build TaskCard component with glass design
+- Build TaskList component with grid layout
+- Build TaskForm component for add/edit operations
+- Implement add task flow with optimistic UI
+- Implement edit task flow with modal
+- Implement delete task flow with confirmation
+- Implement toggle completion with instant feedback
+- Add loading states and error handling
+- Test all CRUD operations
+
+**Deliverables:**
+- Complete task management UI
+- All CRUD operations functional
+- Optimistic UI implemented
+- Error handling in place
+
+#### Phase H: Integration & Polish
+**Duration:** 2 days
+**Focus:** Connecting frontend to backend and refinements
+
+**Tasks:**
+- Connect frontend API client to backend
+- Test all CRUD operations end-to-end
+- Test authentication flow integration
+- Verify responsive design on all devices
+- Optimize performance (bundle size, loading times)
+- Add smooth animations and transitions
+- Handle edge cases and error scenarios
+- Final design refinements
+
+**Deliverables:**
+- Fully integrated application
+- All features working end-to-end
+- Performance optimized
+- Design polished
+
+#### Phase I: Testing & Documentation
+**Duration:** 2 days
+**Focus:** Quality assurance and documentation
+
+**Tasks:**
+- Write frontend component tests (Jest + RTL)
+- Write E2E tests for critical user flows
+- Update README.md with comprehensive setup instructions
+- Create API documentation
+- Create design system documentation
+- Test deployment process
+- Record demo video (< 90 seconds)
+
+**Deliverables:**
+- Test suite completed
+- Documentation updated
+- Demo video recorded
+- Setup instructions clear
+
+#### Phase J: Deployment
+**Duration:** 1 day
+**Focus:** Production deployment and submission
+
+**Tasks:**
+- Deploy backend to hosting platform (Railway/Render)
+- Deploy frontend to Vercel
+- Configure production environment variables
+- Test production builds
+- Verify all functionality in production
+- Submit to hackathon form
+- Share WhatsApp number for demo
+
+**Deliverables:**
+- Both applications deployed
+- Production environment configured
+- Submission completed
+
+### 3.2 Technology Setup Plan
+
+#### Backend Setup
+```bash
+# Create backend directory
+mkdir backend
+cd backend
+
+# Initialize with uv (Python package manager)
+uv init
+
+# Add dependencies
+uv add fastapi uvicorn sqlmodel psycopg2-binary python-jose passlib python-dotenv
+
+# Create project structure
+touch main.py models.py db.py
+mkdir middleware routes tests
+touch middleware/__init__.py middleware/auth.py
+touch routes/__init__.py routes/tasks.py
+touch .env.example
+
+# Environment variables needed
+DATABASE_URL=postgresql://username:password@ep-xxx-xxx.region.neon.tech/dbname?sslmode=require
+BETTER_AUTH_SECRET=your-super-secret-here
+CORS_ORIGINS=http://localhost:3000,https://your-app.vercel.app
+```
+
+#### Frontend Setup
+```bash
+# Initialize Next.js project
+npx create-next-app@latest frontend --typescript --tailwind --app --no-src-dir
+
+cd frontend
+
+# Add dependencies
+npm install better-auth lucide-react clsx tailwind-merge
+
+# Create folder structure
+mkdir -p app/(auth)/signin app/(auth)/signup app/(dashboard)/tasks
+mkdir -p components/ui components/tasks
+mkdir -p lib
+
+# Environment variables needed
+BETTER_AUTH_SECRET=your-super-secret-here
+BETTER_AUTH_URL=http://localhost:3000
+NEXT_PUBLIC_API_URL=http://localhost:8000
+DATABASE_URL=postgresql://username:password@ep-xxx-xxx.region.neon.tech/dbname?sslmode=require
+```
+
+#### Database Setup
+1. Create Neon account at https://neon.tech
+2. Create new project named "hackathon-todo"
+3. Copy the connection string from the project dashboard
+4. Add connection string to both backend `.env` and frontend `.env.local`
+5. Tables will be auto-created via SQLModel on first application run
+
+### 3.3 Configuration Files Plan
+
+#### Backend: pyproject.toml
+```toml
+[project]
+name = "todo-backend"
+version = "1.0.0"
+dependencies = [
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    "sqlmodel>=0.0.14",
+    "psycopg2-binary>=2.9.9",
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
+    "python-dotenv>=1.0.0",
+    "pytest>=7.4.0",
+    "httpx>=0.26.0"
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-cov", "black", "ruff"]
+```
+
+#### Frontend: tailwind.config.ts
+```typescript
+import type { Config } from 'tailwindcss'
+
+const config: Config = {
+  content: [
+    './pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './components/**/*.{js,ts,jsx,tsx,mdx}',
+    './app/**/*.{js,ts,jsx,tsx,mdx}',
+  ],
+  theme: {
+    extend: {
+      colors: {
+        latte: {
+          base: '#eff1f5',
+          mantle: '#e6e9ef',
+          crust: '#dce0e8',
+          text: '#4c4f69',
+          subtext1: '#5c5f77',
+          subtext0: '#6c6f85',
+          surface0: '#ccd0da',
+          surface1: '#bcc0cc',
+          surface2: '#acb0be',
+          overlay0: '#9ca0b0',
+          overlay1: '#8c8fa1',
+          overlay2: '#7c7f93',
+          lavender: '#7287fd',
+          blue: '#1e66f5',
+          sapphire: '#209fb5',
+          sky: '#04a5e5',
+          teal: '#179299',
+          green: '#40a02b',
+          yellow: '#df8e1d',
+          peach: '#fe640b',
+          maroon: '#e64553',
+          red: '#d20f39',
+          mauve: '#8839ef',
+          pink: '#ea76cb',
+          flamingo: '#dd7878',
+          rosewater: '#dc8a78',
+        }
+      },
+      backdropBlur: {
+        xs: '2px',
+        sm: '4px',
+        md: '12px',
+        lg: '16px',
+        xl: '24px',
+      },
+      backgroundImage: {
+        'gradient-lavender': 'linear-gradient(135deg, #7287fd 0%, #8839ef 100%)',
+        'gradient-ocean': 'linear-gradient(135deg, #1e66f5 0%, #04a5e5 100%)',
+        'gradient-sunset': 'linear-gradient(135deg, #fe640b 0%, #dc8a78 100%)',
+        'gradient-forest': 'linear-gradient(135deg, #40a02b 0%, #179299 100%)',
+        'gradient-glass': 'linear-gradient(135deg, rgba(255,255,255,0.4), rgba(255,255,255,0.1))',
+      },
+      boxShadow: {
+        'glass': '0 8px 32px 0 rgba(124, 127, 147, 0.15)',
+        'glass-lg': '0 8px 32px 0 rgba(124, 127, 147, 0.25)',
+      },
+      animation: {
+        'fade-in': 'fade-in 200ms ease-out',
+        'slide-up': 'slide-up 300ms ease-out',
+        'scale-in': 'scale-in 200ms ease-out',
+      },
+      keyframes: {
+        'fade-in': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        'slide-up': {
+          '0%': { transform: 'translateY(10px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        'scale-in': {
+          '0%': { transform: 'scale(0.95)', opacity: '0' },
+          '100%': { transform: 'scale(1)', opacity: '1' },
+        },
+      }
+    },
+  },
+  plugins: [],
+}
+export default config
+```
+
+---
+
+## SECTION 4: Database Implementation Plan
+
+### 4.1 Model Definitions
+
+#### User Model (Better Auth Compatible)
+```python
+from sqlmodel import SQLModel, Field
+from datetime import datetime
+from typing import Optional
+
+class User(SQLModel, table=True):
+    __tablename__ = "users"
+
+    id: str = Field(primary_key=True)
+    email: str = Field(unique=True, index=True)
+    name: Optional[str] = None
+    password_hash: str
+    email_verified: bool = Field(default=False)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+```
+
+#### Task Model
+```python
+from sqlmodel import SQLModel, Field
+from datetime import datetime
+from typing import Optional
+
+class Task(SQLModel, table=True):
+    __tablename__ = "tasks"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: str = Field(foreign_key="users.id", index=True)
+    title: str = Field(max_length=200)
+    description: Optional[str] = None
+    completed: bool = Field(default=False, index=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+```
+
+### 4.2 Database Connection Strategy
+```python
+# db.py
+from sqlmodel import create_engine, Session, SQLModel
+from typing import Generator
+import os
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+engine = create_engine(
+    DATABASE_URL,
+    echo=False,  # Set True for debugging in development
+    pool_size=5,
+    max_overflow=10,
+    pool_pre_ping=True,  # Verify connections before using
+)
+
+def create_db_and_tables():
+    """Create all tables - called on application startup"""
+    SQLModel.metadata.create_all(engine)
+
+def get_session() -> Generator[Session, None, None]:
+    """Dependency for route handlers"""
+    with Session(engine) as session:
+        yield session
+```
+
+### 4.3 Migration Strategy
+
+**Phase 2 Approach (Simple Auto-Creation):**
+- Tables auto-created via `SQLModel.metadata.create_all()`
+- Called on application startup in the `on_startup` event
+- No version control for schema changes (Phase 2 simplicity)
+- All models defined before this point will be created
+
+**Future Phases (Advanced - Alembic):**
+- Use Alembic for version-controlled migrations
+- Safe production deployments
+- Rollback capabilities
+- Branch-specific database changes
+
+---
+
+## SECTION 5: API Implementation Plan
+
+### 5.1 FastAPI Application Structure
+```python
+# main.py
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from db import create_db_and_tables
+from routes import tasks
+import os
+
+app = FastAPI(title="Todo API", version="1.0.0")
+
+# CORS Middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=os.getenv("CORS_ORIGINS", "").split(","),
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Startup event
+@app.on_event("startup")
+def on_startup():
+    create_db_and_tables()
+
+# Health check endpoint
+@app.get("/health")
+def health():
+    return {"status": "ok", "message": "API is running"}
+
+# Include routers
+app.include_router(tasks.router, prefix="/api")
+```
+
+### 5.2 Authentication Middleware
+```python
+# middleware/auth.py
+from fastapi import HTTPException, Header, Depends
+from jose import jwt, JWTError
+import os
+
+BETTER_AUTH_SECRET = os.getenv("BETTER_AUTH_SECRET")
+
+async def verify_jwt(authorization: str = Header(...)) -> str:
+    """Extract and verify JWT token, return user_id"""
+    try:
+        # Remove "Bearer " prefix
+        token = authorization.replace("Bearer ", "")
+
+        # Decode JWT
+        payload = jwt.decode(
+            token,
+            BETTER_AUTH_SECRET,
+            algorithms=["HS256"]
+        )
+
+        # Extract user_id
+        user_id = payload.get("user_id")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Invalid token")
+
+        return user_id
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+```
+
+### 5.3 Route Handler Pattern
+```python
+# routes/tasks.py
+from fastapi import APIRouter, Depends, HTTPException
+from sqlmodel import Session, select
+from db import get_session
+from models import Task
+from middleware.auth import verify_jwt
+from pydantic import BaseModel
+from typing import Optional
+
+router = APIRouter()
+
+class TaskCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+
+class TaskUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+
+@router.get("/{user_id}/tasks")
+async def list_tasks(
+    user_id: str,
+    session: Session = Depends(get_session),
+    auth_user_id: str = Depends(verify_jwt)
+):
+    # Verify user_id matches authenticated user
+    if user_id != auth_user_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    # Query tasks
+    statement = select(Task).where(Task.user_id == user_id)
+    tasks = session.exec(statement).all()
+
+    return {"success": True, "data": tasks, "count": len(tasks)}
+
+@router.post("/{user_id}/tasks")
+async def create_task(
+    user_id: str,
+    task_data: TaskCreate,
+    session: Session = Depends(get_session),
+    auth_user_id: str = Depends(verify_jwt)
+):
+    # Verify user_id matches authenticated user
+    if user_id != auth_user_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    # Validate input
+    if not task_data.title.strip():
+        raise HTTPException(status_code=400, detail="Title is required")
+
+    if len(task_data.title) > 200:
+        raise HTTPException(status_code=400, detail="Title too long")
+
+    # Create task
+    task = Task(
+        user_id=user_id,
+        title=task_data.title.strip(),
+        description=task_data.description.strip() if task_data.description else None
+    )
+
+    session.add(task)
+    session.commit()
+    session.refresh(task)
+
+    return {"success": True, "data": task, "message": "Task created successfully"}
+
+# ... other endpoints following same pattern
+```
+
+---
+
+## SECTION 6: Frontend Implementation Plan
+
+### 6.1 Better Auth Configuration
+```typescript
+// lib/auth.ts
+import { betterAuth } from "better-auth/react"
+
+export const auth = betterAuth({
+  baseURL: process.env.BETTER_AUTH_URL,
+  secret: process.env.BETTER_AUTH_SECRET,
+  database: {
+    type: "postgres",
+    url: process.env.DATABASE_URL,
+  },
+  emailAndPassword: {
+    enabled: true,
+    requireEmailVerification: false, // Simplify for Phase 2
+  },
+  session: {
+    expiresIn: 7 * 24 * 60 * 60, // 7 days
+  },
+  plugins: [
+    {
+      id: "jwt-customizer",
+      init: () => ({
+        transformToken: (token) => {
+          return {
+            ...token,
+            user_id: token.userId, // Include user_id in JWT
+          }
+        },
+      }),
+    },
+  ],
+})
+
+export const { signIn, signUp, signOut, useSession } = auth
+```
+
+### 6.2 API Client Strategy
+```typescript
+// lib/api.ts
+import { getSession } from './auth'
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL
+
+class APIClient {
+  private async getHeaders(): Promise<HeadersInit> {
+    const session = await getSession()
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    }
+
+    if (session?.token) {
+      headers['Authorization'] = `Bearer ${session.token}`
+    }
+
+    return headers
+  }
+
+  async getTasks(userId: string) {
+    const headers = await this.getHeaders()
+    const response = await fetch(`${API_URL}/api/${userId}/tasks`, {
+      headers,
+      cache: 'no-store' // Disable caching for fresh data
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Failed to fetch tasks')
+    }
+
+    return response.json()
+  }
+
+  async createTask(userId: string, data: { title: string; description?: string }) {
+    const headers = await this.getHeaders()
+    const response = await fetch(`${API_URL}/api/${userId}/tasks`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(data),
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Failed to create task')
+    }
+
+    return response.json()
+  }
+
+  async updateTask(userId: string, taskId: number, data: { title?: string; description?: string }) {
+    const headers = await this.getHeaders()
+    const response = await fetch(`${API_URL}/api/${userId}/tasks/${taskId}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(data),
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Failed to update task')
+    }
+
+    return response.json()
+  }
+
+  async deleteTask(userId: string, taskId: number) {
+    const headers = await this.getHeaders()
+    const response = await fetch(`${API_URL}/api/${userId}/tasks/${taskId}`, {
+      method: 'DELETE',
+      headers,
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Failed to delete task')
+    }
+
+    return response.json()
+  }
+
+  async toggleTaskCompletion(userId: string, taskId: number) {
+    const headers = await this.getHeaders()
+    const response = await fetch(`${API_URL}/api/${userId}/tasks/${taskId}/complete`, {
+      method: 'PATCH',
+      headers,
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Failed to update task status')
+    }
+
+    return response.json()
+  }
+}
+
+export const api = new APIClient()
+```
+
+### 6.3 Protected Route Strategy
+```typescript
+// app/(dashboard)/layout.tsx
+import { redirect } from 'next/navigation'
+import { auth } from '@/lib/auth'
+
+export default async function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  // Verify session server-side
+  const session = await auth.useSession()
+
+  if (!session) {
+    redirect('/signin')
+  }
+
+  return (
+
+
+
+          TodoApp
+          <button onClick={() => auth.signOut()}>Logout
+
+
+
+        {children}
+
+
+  )
+}
+```
+
+---
+
+## SECTION 7: Testing Strategy
+
+### 7.1 Backend Testing Plan
+
+#### Test Structure
+```
+tests/
+├── test_models.py       # Model validation and constraints
+├── test_auth.py         # JWT middleware and authentication
+├── test_tasks.py        # Task CRUD endpoint tests
+├── test_database.py     # Database connection and session tests
+└── conftest.py          # Pytest fixtures and configuration
+```
+
+#### Coverage Requirements
+- **Models:** 100% (validation, constraints, relationships)
+- **Endpoints:** 100% (all HTTP methods, status codes, error cases)
+- **Middleware:** 100% (authentication, CORS, error handling)
+- **Overall:** 80%+ minimum (includes utilities/helpers)
+
+#### Test Pattern Example
+```python
+# tests/test_tasks.py
+import pytest
+from fastapi.testclient import TestClient
+from main import app
+from db import engine
+from sqlmodel import Session, select
+from models import Task
+
+client = TestClient(app)
+
+@pytest.fixture
+def mock_user_id():
+    return "test_user_123"
+
+def test_create_task_success(mock_user_id):
+    # Valid token that returns our mock user ID
+    headers = {"Authorization": f"Bearer valid_token_for_{mock_user_id}"}
+
+    response = client.post(
+        f"/api/{mock_user_id}/tasks",
+        json={"title": "Test task", "description": "Test description"},
+        headers=headers
+    )
+
+    assert response.status_code == 201
+    assert response.json()["success"] == True
+    assert response.json()["data"]["title"] == "Test task"
+    assert response.json()["data"]["description"] == "Test description"
+
+def test_create_task_invalid_title(mock_user_id):
+    headers = {"Authorization": f"Bearer valid_token_for_{mock_user_id}"}
+
+    response = client.post(
+        f"/api/{mock_user_id}/tasks",
+        json={"title": "", "description": "Test description"},
+        headers=headers
+    )
+
+    assert response.status_code == 400
+    assert "Title is required" in response.json()["error"]
+
+def test_get_tasks_user_isolation(mock_user_id):
+    headers = {"Authorization": f"Bearer valid_token_for_another_user"}
+
+    response = client.get(
+        f"/api/{mock_user_id}/tasks",
+        headers=headers
+    )
+
+    assert response.status_code == 403  # Access denied
+```
+
+### 7.2 Frontend Testing Plan
+
+#### Test Structure
+```
+__tests__/
+├── components/
+│   ├── ui/
+│   │   ├── GlassCard.test.tsx
+│   │   ├── Button.test.tsx
+│   │   ├── Input.test.tsx
+│   │   └── Modal.test.tsx
+│   └── tasks/
+│       ├── TaskCard.test.tsx
+│       ├── TaskList.test.tsx
+│       └── TaskForm.test.tsx
+├── pages/
+│   ├── signin.test.tsx
+│   ├── signup.test.tsx
+│   └── tasks.test.tsx
+└── integration/
+    ├── auth-flow.test.tsx
+    └── task-crud.test.tsx
+```
+
+#### Testing Tools
+- **Unit Tests:** Jest with React Testing Library
+- **Integration Tests:** React Testing Library for component combinations
+- **E2E Tests:** Playwright or Cypress for critical user flows (optional for Phase 2)
+
+#### Test Pattern Example
+```typescript
+// __tests__/components/TaskCard.test.tsx
+import { render, screen, fireEvent } from '@testing-library/react'
+import { TaskCard } from '@/components/tasks/TaskCard'
+
+const mockTask = {
+  id: 1,
+  user_id: 'user_123',
+  title: 'Test Task',
+  description: 'Test Description',
+  completed: false,
+  created_at: '2026-01-28T10:00:00Z',
+  updated_at: '2026-01-28T10:00:00Z',
+}
+
+describe('TaskCard', () => {
+  it('renders task title and description', () => {
+    render(
+      TaskCard
+        task={mockTask}
+        onToggle={jest.fn()}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    )
+
+    expect(screen.getByText('Test Task')).toBeInTheDocument()
+    expect(screen.getByText('Test Description')).toBeInTheDocument()
+  })
+
+  it('calls onToggle when checkbox is clicked', () => {
+    const handleToggle = jest.fn()
+    render(
+      TaskCard
+        task={mockTask}
+        onToggle={handleToggle}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('checkbox'))
+    expect(handleToggle).toHaveBeenCalledWith(1)
+  })
+
+  it('shows completed styling when task is completed', () => {
+    const completedTask = { ...mockTask, completed: true }
+    render(
+      TaskCard
+        task={completedTask}
+        onToggle={jest.fn()}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    )
+
+    const titleElement = screen.getByText('Test Task')
+    expect(titleElement).toHaveClass('line-through', 'opacity-60')
+  })
+})
+```
+
+---
+
+## SECTION 8: Deployment Plan
+
+### 8.1 Backend Deployment
+
+#### Recommended Platform: Railway
+**Advantages:**
+- Easy PostgreSQL integration with Neon
+- Free tier sufficient for Phase 2
+- Simple deployment from GitHub
+- Good for Python/FastAPI applications
+
+#### Deployment Steps:
+1. **Prepare for Production:**
+   - Create production requirements.txt
+   - Set environment variables for production
+   - Test locally with production settings
+
+2. **Deploy to Railway:**
+   - Create Railway account
+   - Connect GitHub repository
+   - Create new project from repository
+   - Configure environment variables:
+     - `DATABASE_URL` (from Neon)
+     - `BETTER_AUTH_SECRET` (generate new secret)
+     - `CORS_ORIGINS` (your frontend URL)
+
+3. **Configure Build:**
+   - Build command: `uv pip install -r requirements.txt`
+   - Start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+
+4. **Test Deployment:**
+   - Verify API endpoints work
+   - Test authentication flow
+   - Confirm database connectivity
+
+#### Alternative Platforms:
+- **Render:** Good Python support, free tier
+- **Fly.io:** Container-based, good performance
+- **DigitalOcean App Platform:** Reliable, good documentation
+
+### 8.2 Frontend Deployment (Vercel)
+
+#### Deployment Steps:
+1. **Prepare for Production:**
+   - Update environment variables in `.env.production`
+   - Test build locally: `npm run build`
+
+2. **Deploy to Vercel:**
+   - Create Vercel account
+   - Import project from GitHub
+   - Configure build settings:
+     - Framework: Next.js
+     - Build command: `npm run build`
+     - Output directory: `.next`
+
+3. **Configure Environment Variables:**
+   - `BETTER_AUTH_SECRET` (same as backend)
+   - `BETTER_AUTH_URL` (your production frontend URL)
+   - `NEXT_PUBLIC_API_URL` (your backend production URL)
+   - `DATABASE_URL` (same as backend)
+
+4. **Verify Deployment:**
+   - Check that all pages load
+   - Test authentication flow
+   - Verify task management features
+   - Test responsive design
+
+### 8.3 Database (Neon)
+
+#### Already Configured:
+- Database created during setup
+- Connection string shared between frontend and backend
+- No additional deployment steps needed
+- Neon handles scaling automatically
+
+#### Production Considerations:
+- Monitor connection usage
+- Set up alerts for performance issues
+- Plan for backup/restore procedures
+
+---
+
+## SECTION 9: Quality Assurance Plan
+
+### 9.1 Code Quality Checklist
+
+#### Backend Quality Gates:
+- [ ] All functions have proper type hints
+- [ ] All complex functions have docstrings
+- [ ] No unused imports (checked with linter)
+- [ ] Consistent formatting (Black formatter)
+- [ ] Linting passes (Ruff or similar)
+- [ ] All tests pass (pytest)
+- [ ] Test coverage >= 80% (pytest-cov)
+- [ ] No security vulnerabilities (bandit scan)
+
+#### Frontend Quality Gates:
+- [ ] TypeScript strict mode enabled (no errors)
+- [ ] ESLint passes (no warnings/errors)
+- [ ] Prettier formatting applied consistently
+- [ ] All components have proper TypeScript interfaces
+- [ ] No console errors in browser
+- [ ] Responsive design works on all breakpoints
+- [ ] Accessibility standards met (ARIA labels, keyboard nav)
+
+### 9.2 Manual Testing Checklist
+
+#### Authentication Testing:
+- [ ] User can sign up with valid credentials
+- [ ] User cannot sign up with invalid email format
+- [ ] User cannot sign up with weak password
+- [ ] User can sign in with correct credentials
+- [ ] User receives error with incorrect credentials
+- [ ] JWT token persists across page refreshes
+- [ ] Protected routes redirect to signin when not authenticated
+- [ ] Logout clears session and redirects to signin
+
+#### Task Management Testing:
+- [ ] User can add task with valid title
+- [ ] Add task form validates title length (1-200 chars)
+- [ ] User can see all their tasks on dashboard
+- [ ] Task list updates immediately after adding
+- [ ] User can edit task title/description
+- [ ] Edit form validates input properly
+- [ ] User can delete task with confirmation
+- [ ] Task disappears immediately after deletion
+- [ ] User can toggle task completion status
+- [ ] Completion status updates immediately in UI
+- [ ] Only user's tasks are visible (data isolation)
+
+#### UI/UX Testing:
+- [ ] Glass morphism effects render properly
+- [ ] Gradients display correctly on all elements
+- [ ] Animations are smooth (200-300ms)
+- [ ] Loading states are shown during API calls
+- [ ] Error messages are clear and helpful
+- [ ] Forms show validation errors inline
+- [ ] Responsive design works on mobile (375px)
+- [ ] Responsive design works on tablet (768px)
+- [ ] Responsive design works on desktop (1200px+)
+
+### 9.3 Performance Checklist
+
+#### Backend Performance:
+- [ ] API responses < 200ms (measured with logging)
+- [ ] Database queries optimized (use indexes)
+- [ ] Connection pooling configured properly
+- [ ] No memory leaks in long-running processes
+
+#### Frontend Performance:
+- [ ] Page load time < 3 seconds (measured in production)
+- [ ] Bundle size optimized (under 250KB JS)
+- [ ] Images optimized (WebP format where possible)
+- [ ] Unused CSS purged (Tailwind production build)
+- [ ] Animations run at 60fps (tested on target devices)
+- [ ] No performance bottlenecks in component rendering
+
+---
+
+## SECTION 10: Risk Management
+
+### 10.1 Technical Risks
+
+| Risk | Impact | Probability | Mitigation Strategy |
+|------|--------|-------------|-------------------|
+| JWT integration issues between Better Auth and FastAPI | High | Medium | Test auth flow early, use standard libraries, document the bridge pattern |
+| Database connection errors with Neon PostgreSQL | High | Low | Implement connection pooling, add retry logic, monitor connection limits |
+| CORS configuration problems | Medium | Medium | Configure properly from start, test with various origins, add wildcard carefully |
+| Glass morphism performance on lower-end devices | Medium | Medium | Test on various devices, provide fallbacks, optimize blur intensity |
+| Authentication token expiration handling | Medium | Medium | Implement refresh token logic, handle expired tokens gracefully |
+| Responsive design inconsistencies | Low | Medium | Test on actual devices, use consistent breakpoints, follow mobile-first approach |
+
+### 10.2 Timeline Risks
+
+| Risk | Impact | Mitigation Strategy |
+|------|--------|-------------------|
+| Feature creep beyond 5 basic features | High | Strictly stick to requirements, resist adding "nice-to-have" features |
+| Perfectionism leading to delays | Medium | Set time boxes for each phase, focus on working software over perfect code |
+| Testing taking longer than expected | Medium | Write tests alongside implementation, don't defer testing |
+| Deployment issues at last minute | Low | Deploy early and often, test deployment process in advance |
+
+### 10.3 Fallback Plans
+
+#### If Authentication Integration is Too Complex:
+- **Simplify:** Use basic username/password auth only
+- **Skip:** Skip email verification requirement
+- **Extend:** Use longer token expiry (30 days instead of 7)
+
+#### If Glass Morphism is Too Slow:
+- **Reduce:** Lower blur intensity (8px instead of 12px)
+- **Fallback:** Use solid backgrounds as alternative
+- **Optimize:** Add hardware acceleration hints
+
+#### If Time is Running Out:
+- **Deploy:** With basic styling first, add effects later
+- **Skip:** Non-critical animations
+- **Focus:** On core functionality working reliably
+
+---
+
+## SECTION 11: Success Metrics
+
+### 11.1 Functional Requirements
+
+#### Core Features:
+- [ ] **Add Task:** User can create new tasks with title and description
+- [ ] **View Tasks:** User can see all their tasks in a list/grid
+- [ ] **Update Task:** User can edit existing task details
+- [ ] **Delete Task:** User can remove tasks permanently
+- [ ] **Mark Complete:** User can toggle task completion status
+
+#### Authentication:
+- [ ] **Sign Up:** New users can create accounts
+- [ ] **Sign In:** Existing users can authenticate
+- [ ] **Protected Routes:** Dashboard requires authentication
+- [ ] **User Isolation:** Users only see their own tasks
+
+#### API Functionality:
+- [ ] **All Endpoints Work:** GET, POST, PUT, DELETE, PATCH
+- [ ] **Authentication Required:** All endpoints validate JWT
+- [ ] **Data Isolation:** Users can't access others' data
+- [ ] **Error Handling:** Proper error responses for all failure cases
+
+### 11.2 Non-Functional Requirements
+
+#### Design System:
+- [ ] **Latte Color Palette:** All colors from specification implemented
+- [ ] **Glass Morphism Effects:** Cards and UI elements have glass effect
+- [ ] **Gradient Usage:** Buttons and headers use specified gradients
+- [ ] **Responsive Design:** Works on mobile, tablet, desktop
+
+#### Performance:
+- [ ] **API Response Time:** < 200ms average
+- [ ] **Page Load Time:** < 3 seconds on 3G network
+- [ ] **Smooth Animations:** 60fps for all transitions
+- [ ] **Optimized Assets:** Images and bundles properly compressed
+
+#### Quality:
+- [ ] **Backend Test Coverage:** 80%+ for all endpoints
+- [ ] **Frontend Component Tests:** Core components tested
+- [ ] **Accessibility:** WCAG 2.1 AA compliance
+- [ ] **Code Quality:** No linting errors, consistent formatting
+
+### 11.3 Process Requirements
+
+#### SDD Compliance:
+- [ ] **Specifications Followed:** Implementation matches specs exactly
+- [ ] **Claude Code Used:** All code generated via Claude Code
+- [ ] **Specs Updated:** Not code when changes needed (spec-first approach)
+- [ ] **Quality Gates Met:** All checklists completed
+
+#### Documentation:
+- [ ] **README Complete:** Setup instructions clear and comprehensive
+- [ ] **API Documented:** All endpoints with request/response examples
+- [ ] **Design System Documented:** Component usage guidelines
+- [ ] **Demo Video Created:** < 90 seconds showing all features
+
+#### Delivery:
+- [ ] **Frontend Deployed:** Live on Vercel
+- [ ] **Backend Deployed:** API accessible and functional
+- [ ] **Submission Complete:** Form filled and requirements met
+- [ ] **Contact Provided:** WhatsApp number shared
+
+---
+
+## SECTION 12: Timeline & Milestones
+
+### Week 1: Backend Development (Days 1-7)
+
+#### Days 1-2: Foundation Setup (Phase A)
+- Initialize backend project
+- Setup FastAPI application
+- Configure database connection
+- Create SQLModel models
+- Test database connectivity
+
+#### Days 3-5: API Development (Phase B)
+- Implement JWT authentication middleware
+- Create task CRUD endpoints
+- Add request/response validation
+- Setup CORS and error handling
+- Test endpoints manually
+
+#### Days 6-7: Backend Testing (Phase C)
+- Write model tests
+- Write endpoint tests
+- Achieve 80%+ coverage
+- Document API endpoints
+- Prepare for frontend integration
+
+### Week 2: Frontend Development (Days 8-14)
+
+#### Days 8-9: Foundation & Design System (Phases D-E)
+- Initialize Next.js project
+- Configure Tailwind with latte palette
+- Create base UI components (GlassCard, Button, etc.)
+- Implement glass morphism effects
+- Test responsive behavior
+
+#### Days 10-11: Authentication UI (Phase F)
+- Configure Better Auth
+- Create signup page
+- Create signin page
+- Implement protected routes
+- Test auth flow end-to-end
+
+#### Days 12-14: Task Management UI (Phase G)
+- Create API client
+- Build TaskCard component
+- Build TaskList component
+- Build TaskForm component
+- Implement all CRUD operations
+- Add loading/error states
+
+### Week 3: Integration & Deployment (Days 15-21)
+
+#### Days 15-16: Integration & Polish (Phase H)
+- Connect frontend to backend
+- Test all flows end-to-end
+- Optimize performance
+- Add animations and polish
+- Handle edge cases
+
+#### Days 17-18: Testing & Documentation (Phase I)
+- Write component tests
+- Update documentation
+- Create demo video
+- Test production deployment
+- Verify all functionality
+
+#### Days 19-21: Deployment & Submission (Phase J)
+- Deploy backend
+- Deploy frontend to Vercel
+- Configure production environment
+- Test production build
+- Submit to hackathon
+- Share contact information
+
+---
+
+## SECTION 13: Next Steps (Post-Plan)
+
+### Immediate Actions After Plan Approval:
+1. **Create speckit.tasks** - Break this plan into atomic tasks using `/sp.tasks`
+2. **Setup development environment** - Install tools, create projects
+3. **Begin Phase A** - Start with backend foundation setup
+4. **Daily progress tracking** - Update task status daily
+5. **Weekly reviews** - Verify alignment with plan and timeline
+6. **Iterative refinement** - Update specs if needed (NOT code - spec-first)
+
+### Tools & Resources:
+- **Spec-Kit Plus:** Continue using Claude Code for all development
+- **Version Control:** Commit frequently with clear messages
+- **Issue Tracking:** Use GitHub Issues for any blockers
+- **Communication:** Regular updates in team channels
+
+### Success Measurement:
+- **Daily:** Task completion rate
+- **Weekly:** Milestone achievement
+- **Final:** All success metrics met
+- **Feedback:** Code quality and user experience
+
+---
+
+**Plan Version:** 1.0.0
+**Created:** January 28, 2026
+**Author:** Claude Code with Spec-Kit Plus
+**Methodology:** Spec-Driven Development (SDD)
+
+This plan bridges the specifications (WHAT) with implementation tasks (HOW). It provides a detailed roadmap for implementing Phase 2 of the Evolution of Todo project while maintaining strict adherence to the SDD methodology.

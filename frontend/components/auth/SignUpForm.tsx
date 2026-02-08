@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { authClient } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 
 export const SignUpForm = () => {
@@ -66,21 +65,35 @@ export const SignUpForm = () => {
 
     setLoading(true);
     try {
-      const result = await authClient.signUp.email({
-        email: formData.email,
-        password: formData.password,
-        name: formData.name,
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/auth/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          name: formData.name,
+        }),
       });
 
-      if (result.error) {
-        setErrors({ general: result.error.message || "Sign up failed. Please try again." });
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        setErrors({ general: data.detail || data.message || "Sign up failed. Please try again." });
       } else {
+        // Store token
+        if (data.data?.token) {
+          localStorage.setItem('token', data.data.token);
+          // Also set as cookie for middleware compatibility if needed, though pure client-side is simpler
+          document.cookie = `token=${data.data.token}; path=/; max-age=604800`; // 7 days
+        }
         // Redirect to dashboard after successful signup
         router.push('/dashboard/tasks');
       }
     } catch (error) {
       console.error('Signup error:', error);
-      setErrors({ general: 'An unexpected error occurred' });
+      setErrors({ general: 'An unexpected error occurred. Is the backend running?' });
     } finally {
       setLoading(false);
     }

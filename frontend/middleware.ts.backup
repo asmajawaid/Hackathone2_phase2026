@@ -1,0 +1,28 @@
+// middleware.ts
+import { NextRequest, NextResponse } from 'next/server';
+
+export function middleware(request: NextRequest) {
+  // Allow requests to public routes
+  if (request.nextUrl.pathname.startsWith('/') &&
+      !request.nextUrl.pathname.startsWith('/dashboard')) {
+    return NextResponse.next();
+  }
+
+  // For dashboard routes, check if user is authenticated
+  if (request.nextUrl.pathname.startsWith('/dashboard')) {
+    // In a real implementation, we would check for the Better Auth session
+    // For now, we'll allow access for testing purposes
+    const sessionCookie = request.cookies.get('better-auth.session_token');
+
+    if (!sessionCookie) {
+      // Redirect to sign-in if no session exists
+      return NextResponse.redirect(new URL('/signin', request.url));
+    }
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: ['/dashboard/:path*', '/((?!api|_next/static|_next/image|favicon.ico).*)'],
+};

@@ -1,0 +1,281 @@
+# API Contracts: Phase 2 Todo Application Frontend
+
+## Backend API Endpoints
+
+### Task Management Endpoints
+
+#### GET /api/{user_id}/tasks
+**Description**: Retrieve all tasks for a specific user
+
+**Authentication**: JWT token required in Authorization header
+
+**Parameters**:
+- user_id: string (path parameter, must match authenticated user)
+
+**Request Headers**:
+```
+Authorization: Bearer <jwt_token>
+Content-Type: application/json
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "tasks": [
+      {
+        "id": 1,
+        "userId": "user123",
+        "title": "Sample task",
+        "description": "Sample description",
+        "completed": false,
+        "createdAt": "2026-02-05T10:00:00Z",
+        "updatedAt": "2026-02-05T10:00:00Z"
+      }
+    ]
+  },
+  "message": "Tasks retrieved successfully"
+}
+```
+
+**Error Responses**:
+- 401: Unauthorized (invalid or expired token)
+- 403: Forbidden (user_id doesn't match authenticated user)
+- 500: Internal Server Error
+
+---
+
+#### POST /api/{user_id}/tasks
+**Description**: Create a new task for a specific user
+
+**Authentication**: JWT token required in Authorization header
+
+**Parameters**:
+- user_id: string (path parameter, must match authenticated user)
+
+**Request Headers**:
+```
+Authorization: Bearer <jwt_token>
+Content-Type: application/json
+```
+
+**Request Body**:
+```json
+{
+  "title": "New task title",
+  "description": "Optional description"
+}
+```
+
+**Validation**:
+- title is required (1-200 characters)
+- description is optional (0-1000 characters)
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "task": {
+      "id": 2,
+      "userId": "user123",
+      "title": "New task title",
+      "description": "Optional description",
+      "completed": false,
+      "createdAt": "2026-02-05T10:00:00Z",
+      "updatedAt": "2026-02-05T10:00:00Z"
+    }
+  },
+  "message": "Task created successfully"
+}
+```
+
+**Error Responses**:
+- 400: Bad Request (validation errors)
+- 401: Unauthorized (invalid or expired token)
+- 403: Forbidden (user_id doesn't match authenticated user)
+- 500: Internal Server Error
+
+---
+
+#### PUT /api/{user_id}/tasks/{id}
+**Description**: Update an existing task
+
+**Authentication**: JWT token required in Authorization header
+
+**Parameters**:
+- user_id: string (path parameter, must match authenticated user)
+- id: number (task id to update)
+
+**Request Headers**:
+```
+Authorization: Bearer <jwt_token>
+Content-Type: application/json
+```
+
+**Request Body**:
+```json
+{
+  "title": "Updated task title",
+  "description": "Updated description"
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "task": {
+      "id": 2,
+      "userId": "user123",
+      "title": "Updated task title",
+      "description": "Updated description",
+      "completed": false,
+      "createdAt": "2026-02-05T10:00:00Z",
+      "updatedAt": "2026-02-05T10:05:00Z"
+    }
+  },
+  "message": "Task updated successfully"
+}
+```
+
+**Error Responses**:
+- 400: Bad Request (validation errors)
+- 401: Unauthorized (invalid or expired token)
+- 403: Forbidden (user_id doesn't match authenticated user or task doesn't belong to user)
+- 404: Not Found (task doesn't exist)
+- 500: Internal Server Error
+
+---
+
+#### DELETE /api/{user_id}/tasks/{id}
+**Description**: Delete an existing task
+
+**Authentication**: JWT token required in Authorization header
+
+**Parameters**:
+- user_id: string (path parameter, must match authenticated user)
+- id: number (task id to delete)
+
+**Request Headers**:
+```
+Authorization: Bearer <jwt_token>
+Content-Type: application/json
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {},
+  "message": "Task deleted successfully"
+}
+```
+
+**Error Responses**:
+- 401: Unauthorized (invalid or expired token)
+- 403: Forbidden (user_id doesn't match authenticated user or task doesn't belong to user)
+- 404: Not Found (task doesn't exist)
+- 500: Internal Server Error
+
+---
+
+#### PATCH /api/{user_id}/tasks/{id}/complete
+**Description**: Toggle task completion status
+
+**Authentication**: JWT token required in Authorization header
+
+**Parameters**:
+- user_id: string (path parameter, must match authenticated user)
+- id: number (task id to update)
+
+**Request Headers**:
+```
+Authorization: Bearer <jwt_token>
+Content-Type: application/json
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "task": {
+      "id": 2,
+      "userId": "user123",
+      "title": "Updated task title",
+      "description": "Updated description",
+      "completed": true,
+      "createdAt": "2026-02-05T10:00:00Z",
+      "updatedAt": "2026-02-05T10:10:00Z"
+    }
+  },
+  "message": "Task completion status updated successfully"
+}
+```
+
+**Error Responses**:
+- 401: Unauthorized (invalid or expired token)
+- 403: Forbidden (user_id doesn't match authenticated user or task doesn't belong to user)
+- 404: Not Found (task doesn't exist)
+- 500: Internal Server Error
+
+## Authentication Endpoints
+
+### Better Auth Endpoints
+These endpoints are managed by Better Auth and provide authentication functionality:
+
+#### POST /api/auth/signin/email
+**Description**: Sign in with email and password
+
+**Request Body**:
+```json
+{
+  "email": "user@example.com",
+  "password": "SecurePassword123!"
+}
+```
+
+#### POST /api/auth/signup/email
+**Description**: Sign up with email and password
+
+**Request Body**:
+```json
+{
+  "email": "user@example.com",
+  "password": "SecurePassword123!",
+  "name": "John Doe"
+}
+```
+
+#### POST /api/auth/signout
+**Description**: Sign out and invalidate session
+
+## Frontend API Client Interface
+
+### TaskService
+Interface for all task-related API operations:
+
+```typescript
+interface TaskService {
+  getTasks(userId: string): Promise<Task[]>;
+  createTask(userId: string, taskData: { title: string; description?: string }): Promise<Task>;
+  updateTask(userId: string, taskId: number, taskData: { title?: string; description?: string }): Promise<Task>;
+  deleteTask(userId: string, taskId: number): Promise<void>;
+  toggleComplete(userId: string, taskId: number): Promise<Task>;
+}
+```
+
+### AuthService
+Interface for authentication operations:
+
+```typescript
+interface AuthService {
+  signIn(email: string, password: string): Promise<Session>;
+  signUp(userData: { email: string; password: string; name?: string }): Promise<Session>;
+  signOut(): Promise<void>;
+  getCurrentSession(): Promise<Session | null>;
+}
+```

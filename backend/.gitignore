@@ -1,0 +1,103 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+*.spec
+.coverage
+.cache
+.noserc
+.coverage.*
+.pytest_cache/
+.tox/
+.pyre/
+.mypy_cache/
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv/
+env.bak/
+.ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+!logs/.gitkeep
+
+# Environment
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*
+!.env.example
+
+# Testing
+.coverage
+htmlcov/
+.coverage.*
+.cov/
+.pytest_cache/
+
+# FastAPI/SQLModel specific
+*.db
+*.db-journal
+.sqlite3
+
+# Backend specific
+*.sqlite
+celerybeat-schedule
+celerybeat.pid
+
+# Deployment
+*.zip
+*.tar.gz
+*.rar
+*.bz2
+
+# Local development
+*.log
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.pytest_cache/
+.coverage
+.coveragerc
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git/
+.vscode/
+.idea/
+.DS_Store

@@ -1,0 +1,131 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+*.manifest
+*.spec
+.coverage
+.cache
+.noserc
+.coverage.*
+.pytest_cache/
+.tox/
+.pyre/
+.mypy_cache/
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv/
+env.bak/
+.ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+!logs/.gitkeep
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Environment
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*
+!.env.example
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp
+.pnp.js
+.next/
+.nuxt/
+.vuepress/dist
+.cache-loader
+.parcel-cache
+
+# Next.js
+out/
+build/
+.nyc_output
+coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage/
+.coverage*
+*.lcov
+.pytest_cache/
+.cypress/
+
+# FastAPI/SQLModel specific
+*.db
+*.db-journal
+.sqlite3
+
+# Backend specific
+*.sqlite
+celerybeat-schedule
+celerybeat.pid
+
+# Deployment
+*.zip
+*.tar.gz
+*.rar
+*.bz2
+
+# Temporary files
+*.tmp
+*.bak
+*.old
+*~
+
+# Backend logs
+backend/*.log
+logs/backend.log
+
+# Frontend logs
+frontend/*.log
+logs/frontend.log
